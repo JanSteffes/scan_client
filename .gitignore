@@ -1,46 +1,27 @@
-# Miscellaneous
-*.class
-*.log
-*.pyc
-*.swp
-.DS_Store
-.atom/
-.buildlog/
-.history
-.svn/
+# See https://www.dartlang.org/tools/private-files.html
 
-# IntelliJ related
-*.iml
-*.ipr
-*.iws
-.idea/
-
-# The .vscode folder contains launch configuration and tasks you configure in
-# VS Code which you may wish to be included in version control, so this line
-# is commented out by default.
-#.vscode/
-
-# Flutter/Dart/Pub related
-**/doc/api/
-**/ios/Flutter/.last_build_id
-.dart_tool/
-.flutter-plugins
-.flutter-plugins-dependencies
+# Files and directories created by pub
+.buildlog
 .packages
-.pub-cache/
+.project
 .pub/
-/build/
+build/
+**/packages/
 
-# Web related
-lib/generated_plugin_registrant.dart
+# Files created by dart2js
+# (Most Dart developers will use pub build to compile Dart, use/modify these
+#  rules if you intend to use dart2js directly
+#  Convention is to use extension '.dart.js' for Dart compiled to Javascript to
+#  differentiate from explicit Javascript files)
+*.dart.js
+*.part.js
+*.js.deps
+*.js.map
+*.info.json
 
-# Symbolication related
-app.*.symbols
+# Directory created by dartdoc
+doc/api/
 
-# Obfuscation related
-app.*.map.json
-
-# Android Studio will place build artifacts here
-/android/app/debug
-/android/app/profile
-/android/app/release
+# Don't commit pubspec lock file
+# (Library packages only! Remove pattern if developing an application package)
+pubspec.lock
