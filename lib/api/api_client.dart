@@ -116,7 +116,7 @@ class ApiClient {
     } else {
       var msgBody = contentType == "application/x-www-form-urlencoded"
           ? formParams
-          : body != null
+          : body != null && !(body is Object)
               ? serialize(body)
               : body;
       switch (method) {
