@@ -23,7 +23,7 @@ class _HomeState extends State<Home> {
         appBar: AppBar(
           title: Text(widget.title),
         ),
-        body: _children[_currentIndex],
+        body: IndexedStack(index: _currentIndex, children: _children),
         bottomNavigationBar: BottomNavigationBar(
             onTap: onTabTapped, // new
             currentIndex: _currentIndex, // new
