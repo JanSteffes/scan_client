@@ -84,7 +84,7 @@ abstract class ScanServerApi extends ChopperService {
 }
 
 final Map<Type, Object Function(Map<String, dynamic>)>
-    ScanServerApiJsonDecoderMappings = {};
+    scanServerApiJsonDecoderMappings = {};
 
 String? scanQualityToJson(enums.ScanQuality? scanQuality) {
   return enums.$ScanQualityMap[scanQuality];
@@ -171,7 +171,7 @@ class $JsonSerializableConverter extends chopper.JsonConverter {
   }
 }
 
-final $jsonDecoder = $CustomJsonDecoder(ScanServerApiJsonDecoderMappings);
+final $jsonDecoder = $CustomJsonDecoder(scanServerApiJsonDecoderMappings);
 
 // ignore: unused_element
 String? _dateToJson(DateTime? date) {
