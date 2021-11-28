@@ -102,25 +102,31 @@ class _FileContentState extends State<FileContent> {
   Widget getFolderDropdown() {
     return Expanded(
         child: Container(
-      color: Color.fromRGBO(
-          Colors.grey.red, Colors.grey.green, Colors.grey.blue, 0.3),
-      padding: getPaddingInsets(factorVertical: 0),
+      padding: getPaddingInsets(
+        factorVertical: 0.5,
+      ),
+      decoration: BoxDecoration(border: Border.all(color: Colors.blue)),
+      // color: Color.fromRGBO(
+      //     Colors.grey.red, Colors.grey.green, Colors.grey.blue, 0.3),
+      // padding: getPaddingInsets(factorVertical: 0),
       child: DropdownSearch<String>(
-          dropdownBuilder: customDropDownExample,
-          dropdownButtonBuilder: (_) => Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: const Icon(
-                  Icons.arrow_drop_down,
-                  size: 24,
-                  color: Colors.blue,
-                ),
-              ),
+          popupItemBuilder: folderItemsBuilder,
+          dropdownButtonBuilder: (_) => Container(),
+          // Padding(
+          //     padding: const EdgeInsets.all(1.0),
+          //     child: const Icon(
+          //       Icons.arrow_drop_down_outlined,
+          //       color: Colors.blue,
+          //     )),
           mode: Mode.MENU,
+          showSelectedItems: true,
           items: List.generate(_folders!.length, (index) => _folders![index]),
           dropdownSearchDecoration: InputDecoration(
-              // labelText: "Menu mode",
-              // hintText: "country in menu mode",
-              ),
+              border: InputBorder.none,
+              prefixIcon: Icon(
+                Icons.folder_open,
+                color: Colors.blue,
+              )),
           onChanged: (String? newValue) {
             setSetlectedFolder(newValue);
           },
@@ -128,35 +134,33 @@ class _FileContentState extends State<FileContent> {
     ));
   }
 
-  Widget customDropDownExample(BuildContext context, String? item) {
-    if (item == null) {
-      return Container();
-    }
+  Widget folderItemsBuilder(
+      BuildContext context, String item, bool isSelected) {
+    // print("$item: $isSelected");
     return Container(
-      child: ListTile(
-        contentPadding: EdgeInsets.all(2),
-        leading: Icon(
-          Icons.folder, color: Colors.blue,
-          // this does not work - throws 404 error
-          // backgroundImage: NetworkImage(item.avatar ?? ''),
-        ),
-        title: Text(item),
-      ),
-    );
+        color: isSelected
+            ? Color.fromRGBO(
+                Colors.grey.red, Colors.grey.green, Colors.grey.blue, 0.3)
+            : Colors.transparent,
+        child: getDefaultPadding(Row(children: [
+          Icon(isSelected ? Icons.folder_open : Icons.folder,
+              color: Colors.blue),
+          Container(width: 5),
+          Text(item)
+        ])));
   }
 
   /// list of files (placeholder while loading)
   Widget getFileList() {
-    var fileWidgets = _files?.map((f) => Text(f)).toList() ?? <Text>[];
     return Expanded(
         child: Container(
             width: double.infinity,
             padding: getPaddingInsets(),
             // color: Colors.green,
             child: _files != null
-                ? Column(
-                    children: fileWidgets,
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                ? ListView.builder(
+                    itemBuilder: _fileItemsBuilder,
+                    itemCount: _files!.length,
                   )
                 : Container(
                     // color: Colors.yellow
@@ -183,6 +187,7 @@ class _FileContentState extends State<FileContent> {
         icon: Icon(Icons.refresh, color: Colors.blue));
   }
 
+  /// refresh folders and set selected folder to previously selected one if it still exists
   Future refreshFolders() async {
     // set folders null to trigger refresh sign
     setState(() {
@@ -204,6 +209,7 @@ class _FileContentState extends State<FileContent> {
     // folder refresh should trigger filelist refresh
   }
 
+  /// set given folder as selected folder and refresh files
   setSetlectedFolder(String? folderName) {
     setState(() {
       _selectedFolder = folderName;
@@ -211,6 +217,7 @@ class _FileContentState extends State<FileContent> {
     refreshFiles();
   }
 
+  /// Load all files from current selected folder
   Future refreshFiles() async {
     if (_selectedFolder == null || _selectedFolder!.isEmpty) {
       return;
@@ -221,5 +228,29 @@ class _FileContentState extends State<FileContent> {
     setState(() {
       _files = files;
     });
+  }
+
+  Widget _fileItemsBuilder(BuildContext context, int index) {
+    final current = _files?[index];
+    if (current!.isEmpty) {
+      return Text("Fehler beim Laden der Daten!");
+    }
+    return Stack(children: [
+      Image.network(
+        getFileThumbnailUrl(current),
+        errorBuilder: _fileItemThumbnailErrorBuilder,
+      ),
+      Text(current)
+    ]);
+  }
+
+  String getFileThumbnailUrl(String? current) {
+    return "http://raspberrypi/api/File/GetThumbnailOfFile/$_selectedFolder/$current";
+  }
+
+  Widget _fileItemThumbnailErrorBuilder(
+      BuildContext context, Object error, StackTrace? stackTrace) {
+    print("_fileItemThumbnailErrorBuilder: $error");
+    return Text("Failed to load!");
   }
 }

@@ -73,6 +73,14 @@ class _$ScanServerApi extends ScanServerApi {
   }
 
   @override
+  Future<Response<List<String>>> apiFileGetThumbnailOfFileFolderFileNameGet(
+      {required String? folder, required String? fileName}) {
+    final $url = '/api/File/GetThumbnailOfFile/$folder/$fileName';
+    final $request = Request('GET', $url, client.baseUrl);
+    return client.send<List<String>, String>($request);
+  }
+
+  @override
   Future<Response<String>> apiScanPost(
       {String? folderName, String? fileName, String? scanQuality}) {
     final $url = '/api/Scan';

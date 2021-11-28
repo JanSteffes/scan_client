@@ -72,6 +72,15 @@ abstract class ScanServerApi extends ChopperService {
   @Get(path: '/api/File/ReadFolders')
   Future<chopper.Response<List<String>>> apiFileReadFoldersGet();
 
+  ///
+  ///@param folder
+  ///@param fileName
+  @Get(path: '/api/File/GetThumbnailOfFile/{folder}/{fileName}')
+  Future<chopper.Response<List<String>>>
+      apiFileGetThumbnailOfFileFolderFileNameGet(
+          {@Path('folder') required String? folder,
+          @Path('fileName') required String? fileName});
+
   ///Scan a file to the given folder and fileName
   ///@param folderName folder to put result in
   ///@param fileName name the file should get
