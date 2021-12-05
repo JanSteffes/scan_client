@@ -1,11 +1,18 @@
+import 'dart:developer';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:scan_client/pages/contents/icontent.dart';
 import 'package:scan_client/scan_server_api_code/client_index.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:scan_client/widgets/rotating_iconbutton.dart';
 
 class FileContent extends StatefulWidget implements IContent {
-  FileContent({Key? key}) : super(key: key);
+  final ScanServerApi scanServerApi;
+  final Map<String, dynamic> cache;
+  FileContent({Key? key, required this.scanServerApi, required this.cache})
+      : super(key: key);
 
   @override
   Icon getIcon() {
@@ -30,7 +37,6 @@ class FileContent extends StatefulWidget implements IContent {
 }
 
 class _FileContentState extends State<FileContent> {
-  var _fileApi = ScanServerApi.create();
   String? _selectedFolder;
   List<String>? _folders;
   List<String>? _files;
@@ -43,9 +49,10 @@ class _FileContentState extends State<FileContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [getFolderSelection(), getFileList(), getMergeSection()]);
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
+      getFolderSelection(), getFileList(),
+      // getMergeSection()
+    ]);
   }
 
   Widget getDefaultPadding(Widget child,
@@ -66,35 +73,13 @@ class _FileContentState extends State<FileContent> {
   /// dropdown with folders (latest selected by default, placeholder while loading)
   Widget getFolderSelection() {
     return Container(
-        // decoration: BoxDecoration(
-        //     border: Border(
-        //         bottom: BorderSide(
-        //             width: 1, color: Colors.blue, style: BorderStyle.solid))),
-        // color: Colors.orange,
         child: getDefaultPadding(
             Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      // Text(
-      //   "Ordner:",
-      //   style: TextStyle(fontWeight: FontWeight.bold, color: Colors.blue),
-      // ),
-      // Container(height: 5),
       Row(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.center,
           mainAxisAlignment: MainAxisAlignment.start,
-          children: [
-            // Icon(
-            //   Icons.folder,
-            //   color: Colors.blue,
-            // ),
-            // Container(width: 5),
-            _folders != null && _folders!.isNotEmpty
-                ? getFolderDropdown()
-                : CircularProgressIndicator(),
-            _folders != null && _folders!.isNotEmpty
-                ? getFolderRefresh()
-                : Container()
-          ]),
+          children: [getFolderDropdown(), getFolderRefresh()]),
     ])));
   }
 
@@ -106,21 +91,12 @@ class _FileContentState extends State<FileContent> {
         factorVertical: 0.5,
       ),
       decoration: BoxDecoration(border: Border.all(color: Colors.blue)),
-      // color: Color.fromRGBO(
-      //     Colors.grey.red, Colors.grey.green, Colors.grey.blue, 0.3),
-      // padding: getPaddingInsets(factorVertical: 0),
       child: DropdownSearch<String>(
           popupItemBuilder: folderItemsBuilder,
           dropdownButtonBuilder: (_) => Container(),
-          // Padding(
-          //     padding: const EdgeInsets.all(1.0),
-          //     child: const Icon(
-          //       Icons.arrow_drop_down_outlined,
-          //       color: Colors.blue,
-          //     )),
           mode: Mode.MENU,
           showSelectedItems: true,
-          items: List.generate(_folders!.length, (index) => _folders![index]),
+          items: _folders,
           dropdownSearchDecoration: InputDecoration(
               border: InputBorder.none,
               prefixIcon: Icon(
@@ -136,12 +112,8 @@ class _FileContentState extends State<FileContent> {
 
   Widget folderItemsBuilder(
       BuildContext context, String item, bool isSelected) {
-    // print("$item: $isSelected");
     return Container(
-        color: isSelected
-            ? Color.fromRGBO(
-                Colors.grey.red, Colors.grey.green, Colors.grey.blue, 0.3)
-            : Colors.transparent,
+        color: isSelected ? Colors.grey.withOpacity(0.3) : Colors.transparent,
         child: getDefaultPadding(Row(children: [
           Icon(isSelected ? Icons.folder_open : Icons.folder,
               color: Colors.blue),
@@ -156,15 +128,17 @@ class _FileContentState extends State<FileContent> {
         child: Container(
             width: double.infinity,
             padding: getPaddingInsets(),
-            // color: Colors.green,
             child: _files != null
-                ? ListView.builder(
+                ? GridView.builder(
+                    gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+                        maxCrossAxisExtent: 200,
+                        crossAxisSpacing: 5,
+                        mainAxisSpacing: 5,
+                        mainAxisExtent: 282),
                     itemBuilder: _fileItemsBuilder,
-                    itemCount: _files!.length,
+                    itemCount: _files?.length ?? 0,
                   )
-                : Container(
-                    // color: Colors.yellow
-                    )));
+                : Container()));
   }
 
   /// mergestuff if one of the files got selected for merging
@@ -179,12 +153,13 @@ class _FileContentState extends State<FileContent> {
     );
   }
 
+  /// refresh button for the folder dropdown
   Widget getFolderRefresh() {
-    return IconButton(
-        onPressed: () async {
-          refreshFolders();
-        },
-        icon: Icon(Icons.refresh, color: Colors.blue));
+    return RotatingIconButton(
+      icon: Icons.refresh,
+      onPressed: refreshFolders,
+      iconColor: Colors.blue,
+    );
   }
 
   /// refresh folders and set selected folder to previously selected one if it still exists
@@ -195,7 +170,7 @@ class _FileContentState extends State<FileContent> {
       _files = null;
     });
     // get folders and set
-    var foldersResponse = await _fileApi.apiFileReadFoldersGet();
+    var foldersResponse = await widget.scanServerApi.apiFileReadFoldersGet();
     var folders = foldersResponse.body;
     setState(() {
       _folders = folders?.toList();
@@ -213,6 +188,7 @@ class _FileContentState extends State<FileContent> {
   setSetlectedFolder(String? folderName) {
     setState(() {
       _selectedFolder = folderName;
+      _files = null;
     });
     refreshFiles();
   }
@@ -223,7 +199,8 @@ class _FileContentState extends State<FileContent> {
       return;
     }
     var folder = _selectedFolder as String;
-    var filesResponse = await _fileApi.apiFileReadFilesGet(directory: folder);
+    var filesResponse =
+        await widget.scanServerApi.apiFileReadFilesGet(directory: folder);
     var files = filesResponse.body;
     setState(() {
       _files = files;
@@ -232,25 +209,85 @@ class _FileContentState extends State<FileContent> {
 
   Widget _fileItemsBuilder(BuildContext context, int index) {
     final current = _files?[index];
-    if (current!.isEmpty) {
+    if (current == null || current.isEmpty) {
       return Text("Fehler beim Laden der Daten!");
     }
-    return Stack(children: [
-      Image.network(
-        getFileThumbnailUrl(current),
-        errorBuilder: _fileItemThumbnailErrorBuilder,
-      ),
-      Text(current)
-    ]);
+    return Stack(
+      children: [
+        getFileThumbnailWidget(current),
+        Container(
+            alignment: AlignmentDirectional.bottomStart,
+            child: Container(
+                width: double.infinity,
+                padding: getPaddingInsets(),
+                color: Colors.blue.withOpacity(0.5),
+                child: Text(
+                  current,
+                  style: TextStyle(fontWeight: FontWeight.bold),
+                )))
+      ],
+      alignment: AlignmentDirectional.bottomStart,
+      fit: StackFit.expand,
+    );
   }
 
-  String getFileThumbnailUrl(String? current) {
-    return "http://raspberrypi/api/File/GetThumbnailOfFile/$_selectedFolder/$current";
+  ///build widget for files
+  Widget getFileThumbnailWidget(String current) {
+    return FutureBuilder<Uint8List?>(
+        future: getThumbnailData(
+            current), // a previously-obtained Future<String> or null
+        builder: (BuildContext context, AsyncSnapshot<Uint8List?> snapshot) {
+          if (snapshot.hasData) {
+            if (snapshot.data != null) {
+              try {
+                return
+                    // Opacity(
+                    //   opacity: 1.0,
+                    //   child:
+                    Image.memory(
+                  snapshot.data!,
+                  fit: BoxFit.fill,
+                  // ),
+                );
+              } on Exception catch (e) {
+                log("Error while creating image preview of '$current': ${e.toString()}");
+                return Icon(Icons.error, color: Colors.red);
+              }
+            }
+            return Container(child: Center(child: CircularProgressIndicator()));
+          } else if (snapshot.hasError) {
+            return Icon(Icons.error, color: Colors.red);
+          } else {
+            return Container(child: Center(child: CircularProgressIndicator()));
+          }
+        });
   }
 
-  Widget _fileItemThumbnailErrorBuilder(
-      BuildContext context, Object error, StackTrace? stackTrace) {
-    print("_fileItemThumbnailErrorBuilder: $error");
-    return Text("Failed to load!");
+  // retrieve thumbnaildata and save it to caches
+  Future<Uint8List?> getThumbnailData(String fileName) async {
+    var cacheKey = "${_selectedFolder}_$fileName";
+    if (widget.cache.containsKey(cacheKey)) {
+      var data = widget.cache[cacheKey];
+      if (data == null) {
+        return Future.error("No data available", StackTrace.current);
+      }
+      return data;
+    }
+
+    Response<String>? data;
+    try {
+      data = await widget.scanServerApi
+          .apiFileGetThumbnailOfFileFolderFileNameGet(
+              folder: _selectedFolder, fileName: fileName);
+    } on Exception catch (e) {
+      log("Errpr while getting tumbnaildata of '$fileName': ${e.toString()}");
+    }
+    // await Future.delayed(Duration(milliseconds: Random().nextInt(250)));
+    if (data != null && data.isSuccessful) {
+      widget.cache[cacheKey] = data.bodyBytes;
+    } else {
+      widget.cache[cacheKey] = null;
+    }
+    return getThumbnailData(fileName);
   }
 }

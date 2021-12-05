@@ -11,15 +11,22 @@ part 'scan_server_api.swagger.chopper.dart';
 
 @ChopperApi()
 abstract class ScanServerApi extends ChopperService {
-  static ScanServerApi create([ChopperClient? client]) {
+  static ChopperClient createClient(String baseUrl) {
+    return ChopperClient(
+        services: [_$ScanServerApi()],
+        converter: $JsonSerializableConverter(),
+        baseUrl: baseUrl);
+  }
+
+  static ScanServerApi create(
+    String baseUrl, [
+    ChopperClient? client,
+  ]) {
     if (client != null) {
       return _$ScanServerApi(client);
     }
 
-    final newClient = ChopperClient(
-        services: [_$ScanServerApi()],
-        converter: $JsonSerializableConverter(),
-        baseUrl: 'http://raspberrypi');
+    final newClient = createClient(baseUrl);
     return _$ScanServerApi(newClient);
   }
 
@@ -76,10 +83,9 @@ abstract class ScanServerApi extends ChopperService {
   ///@param folder
   ///@param fileName
   @Get(path: '/api/File/GetThumbnailOfFile/{folder}/{fileName}')
-  Future<chopper.Response<List<String>>>
-      apiFileGetThumbnailOfFileFolderFileNameGet(
-          {@Path('folder') required String? folder,
-          @Path('fileName') required String? fileName});
+  Future<chopper.Response<String>> apiFileGetThumbnailOfFileFolderFileNameGet(
+      {@Path('folder') required String? folder,
+      @Path('fileName') required String? fileName});
 
   ///Scan a file to the given folder and fileName
   ///@param folderName folder to put result in

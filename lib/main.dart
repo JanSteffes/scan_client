@@ -1,8 +1,25 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:developer';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'pages/my_homepage.dart';
 
 void main() {
-  runApp(MyApp());
+  runZonedGuarded(() async {
+    WidgetsFlutterBinding.ensureInitialized();
+    FlutterError.onError = (FlutterErrorDetails details) {
+      FlutterError.presentError(details);
+      exit(1);
+    };
+    runApp(MyApp());
+  }, (Object error, StackTrace stack) {
+    var errorJson = jsonEncode(error);
+    log("==> Error: $errorJson");
+    log("==> stackTrace: $stack");
+    exit(1);
+  });
 }
 
 class MyApp extends StatelessWidget {
