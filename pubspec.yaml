@@ -30,6 +30,7 @@ dependencies:
   json_annotation: ^4.3.0
   chopper: ^4.0.3
   dropdown_search: ^2.0.1
+  provider: ^6.0.1
 
 dev_dependencies:
   flutter_test:

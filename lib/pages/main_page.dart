@@ -1,29 +1,32 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:scan_client/pages/contents/file_content.dart';
-import 'package:scan_client/pages/contents/icontent.dart';
-import 'package:scan_client/pages/contents/scan_content.dart';
+import 'package:provider/provider.dart';
+import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
+import 'package:scan_client/pages/contents/file_content/file_content.dart';
 import 'package:scan_client/scan_server_api_code/client_index.dart';
-import 'contents/state.dart' as globals;
+import 'package:scan_client/widgets/file_content_actionbar.dart';
+import 'contents/globals.dart' as globals;
 
-class Home extends StatefulWidget {
-  Home({Key? key, required this.title}) : super(key: key);
+class MainPage extends StatefulWidget {
+  MainPage({Key? key, required this.title}) : super(key: key);
 
   final String title;
 
   @override
-  _HomeState createState() => _HomeState();
+  _MainPageState createState() => _MainPageState();
 }
 
-class _HomeState extends State<Home> {
-  var _currentIndex = 0;
+class _MainPageState extends State<MainPage> {
   static const String switchEndpointCommand = "switchEndpoint";
   static const String clearCacheCommand = "clearCache";
 
   // late List<IContent> _children;
   late Map<String, dynamic> _cache;
+
+  ///Api/endpoint to use
   ScanServerApi? _scanServerApi;
 
+  /// keep tract of current selected endpoint
   String? _currentEndPoint;
 
   @override
@@ -31,34 +34,38 @@ class _HomeState extends State<Home> {
     _currentEndPoint = globals.defaultEndpoint;
     _scanServerApi = ScanServerApi.create(_currentEndPoint!);
     _cache = Map<String, dynamic>();
-    // _children = [
-    //   FileContent(scanServerApi: _scanServerApi!, cache: _cache),
-    //   ScanContent()
-    // ];
     super.initState();
   }
 
   @override
   Widget build(BuildContext context) {
+    var selectedFilesRef = Provider.of<SelectedFiles>(context, listen: true);
     return Scaffold(
         appBar: AppBar(
           title: Text(widget.title),
           actions: buildAppBarActions(),
         ),
-        body: FileContent(scanServerApi: _scanServerApi!, cache: _cache));
-    // IndexedStack(index: _currentIndex, children: _children),
-    // bottomNavigationBar: BottomNavigationBar(
-    //     onTap: onTabTapped, // new
-    //     currentIndex: _currentIndex, // new
-    //     items: _children.map((e) => e.getNavItem()).toList()));
+        body: FileContent(scanServerApi: _scanServerApi!, cache: _cache),
+        floatingActionButton: getScanButton(),
+        floatingActionButtonLocation:
+            // selectedFilesRef.getCount() == 0
+            //     ? FloatingActionButtonLocation.centerFloat            :
+            FloatingActionButtonLocation.centerDocked,
+        bottomNavigationBar:
+            FileActionsBottomAppBar(selectedFilesRef: selectedFilesRef));
   }
 
-  void onTabTapped(int index) {
-    setState(() {
-      _currentIndex = index;
-    });
+  ///build scan button
+  Widget getScanButton() {
+    return FloatingActionButton(
+        onPressed: () {
+          // TODO create dialog with can quality, checkbox (default current date folder to save to) and filename text field
+        },
+        child: const Icon(Icons.scanner_rounded),
+        tooltip: 'Scannen');
   }
 
+  /// build global actions
   List<Widget> buildAppBarActions() {
     return [
       PopupMenuButton(
@@ -78,6 +85,7 @@ class _HomeState extends State<Home> {
     ];
   }
 
+  /// handle global actions
   void handleSelect(String value) {
     switch (value) {
       case switchEndpointCommand:
@@ -89,10 +97,12 @@ class _HomeState extends State<Home> {
     }
   }
 
+  /// clear the _cache map
   void clearCache() {
     _cache.clear();
   }
 
+  /// switch to other endpoint (see globals)
   void switchEndpoint() {
     _currentEndPoint = _currentEndPoint == globals.defaultEndpoint
         ? globals.debugEndpont

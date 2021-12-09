@@ -4,7 +4,9 @@ import 'dart:developer';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'pages/my_homepage.dart';
+import 'package:provider/provider.dart';
+import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
+import 'pages/main_page.dart';
 
 void main() {
   runZonedGuarded(() async {
@@ -13,7 +15,8 @@ void main() {
       FlutterError.presentError(details);
       exit(1);
     };
-    runApp(MyApp());
+    runApp(ChangeNotifierProvider(
+        create: (context) => SelectedFiles(), child: MyApp()));
   }, (Object error, StackTrace stack) {
     var errorJson = jsonEncode(error);
     log("==> Error: $errorJson");
@@ -39,6 +42,6 @@ class MyApp extends StatelessWidget {
             // Notice that the counter didn't reset back to zero; the application
             // is not restarted.
             primarySwatch: Colors.blue),
-        home: Home(title: 'ScanApp'));
+        home: MainPage(title: 'ScanApp'));
   }
 }

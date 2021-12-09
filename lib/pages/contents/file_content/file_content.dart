@@ -1,16 +1,24 @@
 import 'dart:developer';
 import 'dart:typed_data';
 
+import 'package:chopper/chopper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:provider/provider.dart';
+import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
 import 'package:scan_client/pages/contents/icontent.dart';
 import 'package:scan_client/scan_server_api_code/client_index.dart';
 import 'package:dropdown_search/dropdown_search.dart';
+import 'package:scan_client/widgets/file_content_file_item.dart';
 import 'package:scan_client/widgets/rotating_iconbutton.dart';
 
 class FileContent extends StatefulWidget implements IContent {
+  ///access to api methods
   final ScanServerApi scanServerApi;
+
+  ///cache
   final Map<String, dynamic> cache;
+
   FileContent({Key? key, required this.scanServerApi, required this.cache})
       : super(key: key);
 
@@ -38,8 +46,9 @@ class FileContent extends StatefulWidget implements IContent {
 
 class _FileContentState extends State<FileContent> {
   String? _selectedFolder;
-  List<String>? _folders;
-  List<String>? _files;
+  List<String> _folders = <String>[];
+  List<String> _files = <String>[];
+  late SelectedFiles _selectedFilesRef;
 
   @override
   void initState() {
@@ -49,10 +58,10 @@ class _FileContentState extends State<FileContent> {
 
   @override
   Widget build(BuildContext context) {
-    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: [
-      getFolderSelection(), getFileList(),
-      // getMergeSection()
-    ]);
+    _selectedFilesRef = Provider.of<SelectedFiles>(context, listen: true);
+    return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [getFolderSelection(), getFileList()]);
   }
 
   Widget getDefaultPadding(Widget child,
@@ -110,6 +119,7 @@ class _FileContentState extends State<FileContent> {
     ));
   }
 
+  /// build folderItems
   Widget folderItemsBuilder(
       BuildContext context, String item, bool isSelected) {
     return Container(
@@ -128,7 +138,7 @@ class _FileContentState extends State<FileContent> {
         child: Container(
             width: double.infinity,
             padding: getPaddingInsets(),
-            child: _files != null
+            child: _files.isNotEmpty
                 ? GridView.builder(
                     gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
                         maxCrossAxisExtent: 200,
@@ -136,21 +146,9 @@ class _FileContentState extends State<FileContent> {
                         mainAxisSpacing: 5,
                         mainAxisExtent: 282),
                     itemBuilder: _fileItemsBuilder,
-                    itemCount: _files?.length ?? 0,
+                    itemCount: _files.length,
                   )
                 : Container()));
-  }
-
-  /// mergestuff if one of the files got selected for merging
-  Widget getMergeSection() {
-    // todo
-    return Container(
-      height: 50,
-      width: double.infinity,
-      color: Colors.red,
-      child: Text("TODO Dateien zusammenfügen"),
-      alignment: Alignment.center,
-    );
   }
 
   /// refresh button for the folder dropdown
@@ -166,18 +164,20 @@ class _FileContentState extends State<FileContent> {
   Future refreshFolders() async {
     // set folders null to trigger refresh sign
     setState(() {
-      _folders = null;
-      _files = null;
+      _folders = <String>[];
+      _files = <String>[];
     });
     // get folders and set
     var foldersResponse = await widget.scanServerApi.apiFileReadFoldersGet();
     var folders = foldersResponse.body;
     setState(() {
-      _folders = folders?.toList();
+      _folders = folders?.toList() ?? <String>[];
     });
     // if last selected folder still in the list, keep it, else take first (like in initial loading)
-    if (!folders!.contains(_selectedFolder)) {
-      setSetlectedFolder(_folders!.first);
+    if (_folders.isNotEmpty && !_folders.contains(_selectedFolder)) {
+      setSetlectedFolder(_folders.first);
+    } else if (_folders.isEmpty) {
+      setSetlectedFolder(null);
     } else {
       setSetlectedFolder(_selectedFolder);
     }
@@ -188,7 +188,8 @@ class _FileContentState extends State<FileContent> {
   setSetlectedFolder(String? folderName) {
     setState(() {
       _selectedFolder = folderName;
-      _files = null;
+      _files = <String>[];
+      _selectedFilesRef.clearFiles();
     });
     refreshFiles();
   }
@@ -201,66 +202,39 @@ class _FileContentState extends State<FileContent> {
     var folder = _selectedFolder as String;
     var filesResponse =
         await widget.scanServerApi.apiFileReadFilesGet(directory: folder);
-    var files = filesResponse.body;
+    List<String>? files;
+    if (filesResponse.isSuccessful) {
+      files = filesResponse.body!
+          .where((element) => element.endsWith(".pdf"))
+          .toList();
+    }
     setState(() {
-      _files = files;
+      _files = files ?? <String>[];
     });
   }
 
+  ///Builder to build fileWidgets
   Widget _fileItemsBuilder(BuildContext context, int index) {
-    final current = _files?[index];
-    if (current == null || current.isEmpty) {
-      return Text("Fehler beim Laden der Daten!");
+    var fileName = _files[index];
+    var isSelected = _selectedFilesRef.getFileContained(fileName);
+    var selectionIndex =
+        isSelected ? _selectedFilesRef.getSelectedIndexOfFile(fileName) : null;
+    bool fadeInPageHint = false;
+    // or current item is newly last selected one (not on remove action)
+    var lastSelectionWasRemove = _selectedFilesRef.getLastActionWasRemove();
+    if (!lastSelectionWasRemove) {
+      var isMaxSelectionIndex =
+          _selectedFilesRef.getFileHasHighestIndex(fileName);
+      fadeInPageHint = isMaxSelectionIndex;
     }
-    return Stack(
-      children: [
-        getFileThumbnailWidget(current),
-        Container(
-            alignment: AlignmentDirectional.bottomStart,
-            child: Container(
-                width: double.infinity,
-                padding: getPaddingInsets(),
-                color: Colors.blue.withOpacity(0.5),
-                child: Text(
-                  current,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                )))
-      ],
-      alignment: AlignmentDirectional.bottomStart,
-      fit: StackFit.expand,
-    );
-  }
-
-  ///build widget for files
-  Widget getFileThumbnailWidget(String current) {
-    return FutureBuilder<Uint8List?>(
-        future: getThumbnailData(
-            current), // a previously-obtained Future<String> or null
-        builder: (BuildContext context, AsyncSnapshot<Uint8List?> snapshot) {
-          if (snapshot.hasData) {
-            if (snapshot.data != null) {
-              try {
-                return
-                    // Opacity(
-                    //   opacity: 1.0,
-                    //   child:
-                    Image.memory(
-                  snapshot.data!,
-                  fit: BoxFit.fill,
-                  // ),
-                );
-              } on Exception catch (e) {
-                log("Error while creating image preview of '$current': ${e.toString()}");
-                return Icon(Icons.error, color: Colors.red);
-              }
-            }
-            return Container(child: Center(child: CircularProgressIndicator()));
-          } else if (snapshot.hasError) {
-            return Icon(Icons.error, color: Colors.red);
-          } else {
-            return Container(child: Center(child: CircularProgressIndicator()));
-          }
-        });
+    return FileItem(
+        fileName: fileName,
+        isSelected: isSelected,
+        fadeInPageHint: fadeInPageHint,
+        selectFunction: selectItem,
+        thumbnailDataFuture: getThumbnailData(fileName),
+        selectionIndex: selectionIndex,
+        paddingInsets: getPaddingInsets());
   }
 
   // retrieve thumbnaildata and save it to caches
@@ -282,12 +256,20 @@ class _FileContentState extends State<FileContent> {
     } on Exception catch (e) {
       log("Errpr while getting tumbnaildata of '$fileName': ${e.toString()}");
     }
-    // await Future.delayed(Duration(milliseconds: Random().nextInt(250)));
     if (data != null && data.isSuccessful) {
       widget.cache[cacheKey] = data.bodyBytes;
     } else {
       widget.cache[cacheKey] = null;
     }
     return getThumbnailData(fileName);
+  }
+
+  /// Select item at index
+  void selectItem(String fileName) {
+    if (_selectedFilesRef.getFileContained(fileName)) {
+      _selectedFilesRef.removeFile(fileName);
+    } else {
+      _selectedFilesRef.addFile(fileName);
+    }
   }
 }
