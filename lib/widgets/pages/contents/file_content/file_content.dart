@@ -5,11 +5,13 @@ import 'package:chopper/chopper.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
+import 'package:scan_client/models/file_actions/file_actions.dart';
+import 'package:scan_client/models/notifications/file_action_notification.dart';
 import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
-import 'package:scan_client/pages/contents/icontent.dart';
 import 'package:scan_client/scan_server_api_code/client_index.dart';
 import 'package:dropdown_search/dropdown_search.dart';
-import 'package:scan_client/widgets/file_content_file_item.dart';
+import 'package:scan_client/widgets/pages/contents/file_content/file_content_file_item.dart';
+import 'package:scan_client/widgets/pages/contents/icontent.dart';
 import 'package:scan_client/widgets/rotating_iconbutton.dart';
 
 class FileContent extends StatefulWidget implements IContent {
@@ -41,11 +43,10 @@ class FileContent extends StatefulWidget implements IContent {
   }
 
   @override
-  _FileContentState createState() => _FileContentState();
+  FileContentState createState() => FileContentState();
 }
 
-class _FileContentState extends State<FileContent> {
-  String? _selectedFolder;
+class FileContentState extends State<FileContent> {
   List<String> _folders = <String>[];
   List<String> _files = <String>[];
   late SelectedFiles _selectedFilesRef;
@@ -115,7 +116,7 @@ class _FileContentState extends State<FileContent> {
           onChanged: (String? newValue) {
             setSetlectedFolder(newValue);
           },
-          selectedItem: _selectedFolder),
+          selectedItem: _selectedFilesRef.getSelectedFolder()),
     ));
   }
 
@@ -174,32 +175,36 @@ class _FileContentState extends State<FileContent> {
       _folders = folders?.toList() ?? <String>[];
     });
     // if last selected folder still in the list, keep it, else take first (like in initial loading)
-    if (_folders.isNotEmpty && !_folders.contains(_selectedFolder)) {
+    if (_folders.isNotEmpty &&
+        !_folders.contains(_selectedFilesRef.getSelectedFolder())) {
       setSetlectedFolder(_folders.first);
     } else if (_folders.isEmpty) {
-      setSetlectedFolder(null);
+      throw FlutterError("Keine Ordner erhalten!");
     } else {
-      setSetlectedFolder(_selectedFolder);
+      setSetlectedFolder(_selectedFilesRef.getSelectedFolder()!);
     }
     // folder refresh should trigger filelist refresh
   }
 
   /// set given folder as selected folder and refresh files
   setSetlectedFolder(String? folderName) {
+    if (folderName == null) {
+      throw FlutterError("Gültiger Ordner ausgewählt!");
+    }
     setState(() {
-      _selectedFolder = folderName;
+      _selectedFilesRef.setFolder(folderName);
       _files = <String>[];
-      _selectedFilesRef.clearFiles();
     });
     refreshFiles();
   }
 
   /// Load all files from current selected folder
   Future refreshFiles() async {
-    if (_selectedFolder == null || _selectedFolder!.isEmpty) {
+    if (_selectedFilesRef.getSelectedFolder() == null ||
+        _selectedFilesRef.getSelectedFolder()!.isEmpty) {
       return;
     }
-    var folder = _selectedFolder as String;
+    var folder = _selectedFilesRef.getSelectedFolder()!;
     var filesResponse =
         await widget.scanServerApi.apiFileReadFilesGet(directory: folder);
     List<String>? files;
@@ -210,6 +215,7 @@ class _FileContentState extends State<FileContent> {
     }
     setState(() {
       _files = files ?? <String>[];
+      _selectedFilesRef.removeFilesNotContained(files);
     });
   }
 
@@ -227,19 +233,23 @@ class _FileContentState extends State<FileContent> {
           _selectedFilesRef.getFileHasHighestIndex(fileName);
       fadeInPageHint = isMaxSelectionIndex;
     }
-    return FileItem(
-        fileName: fileName,
-        isSelected: isSelected,
-        fadeInPageHint: fadeInPageHint,
-        selectFunction: selectItem,
-        thumbnailDataFuture: getThumbnailData(fileName),
-        selectionIndex: selectionIndex,
-        paddingInsets: getPaddingInsets());
+    return GestureDetector(
+        child: FileItem(
+            fileName: fileName,
+            isSelected: isSelected,
+            fadeInPageHint: fadeInPageHint,
+            selectFunction: selectItem,
+            thumbnailDataFuture: getThumbnailData(fileName),
+            selectionIndex: selectionIndex,
+            paddingInsets: getPaddingInsets()),
+        onLongPress: () => FileActionNotification(FileActions.see,
+                _selectedFilesRef.getSelectedFolder()!, fileName)
+            .dispatch(context));
   }
 
   // retrieve thumbnaildata and save it to caches
   Future<Uint8List?> getThumbnailData(String fileName) async {
-    var cacheKey = "${_selectedFolder}_$fileName";
+    var cacheKey = "${_selectedFilesRef.getSelectedFolder()}_$fileName";
     if (widget.cache.containsKey(cacheKey)) {
       var data = widget.cache[cacheKey];
       if (data == null) {
@@ -252,7 +262,8 @@ class _FileContentState extends State<FileContent> {
     try {
       data = await widget.scanServerApi
           .apiFileGetThumbnailOfFileFolderFileNameGet(
-              folder: _selectedFolder, fileName: fileName);
+              folder: _selectedFilesRef.getSelectedFolder(),
+              fileName: fileName);
     } on Exception catch (e) {
       log("Errpr while getting tumbnaildata of '$fileName': ${e.toString()}");
     }

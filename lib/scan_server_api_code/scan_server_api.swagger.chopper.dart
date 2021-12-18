@@ -36,15 +36,14 @@ class _$ScanServerApi extends ScanServerApi {
   }
 
   @override
-  Future<Response<List<String>>> apiFileGet(
-      {String? folder, String? fileToRead}) {
+  Future<Response<String>> apiFileGet({String? folder, String? fileToRead}) {
     final $url = '/api/File';
     final $params = <String, dynamic>{
       'folder': folder,
       'fileToRead': fileToRead
     };
     final $request = Request('GET', $url, client.baseUrl, parameters: $params);
-    return client.send<List<String>, String>($request);
+    return client.send<String, String>($request);
   }
 
   @override

@@ -52,7 +52,7 @@ abstract class ScanServerApi extends ChopperService {
   ///@param folder folder of file
   ///@param fileToRead
   @Get(path: '/api/File')
-  Future<chopper.Response<List<String>>> apiFileGet(
+  Future<chopper.Response<String>> apiFileGet(
       {@Query('folder') String? folder,
       @Query('fileToRead') String? fileToRead});
 

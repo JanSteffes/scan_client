@@ -6,7 +6,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
-import 'pages/main_page.dart';
+import 'package:scan_client/widgets/pages/main_page.dart';
 
 void main() {
   runZonedGuarded(() async {
