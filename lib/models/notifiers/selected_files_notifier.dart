@@ -1,5 +1,6 @@
 import 'package:flutter/widgets.dart';
 import 'package:scan_client/models/selection_states.dart';
+import 'package:collection/collection.dart';
 
 /// Keep track of changes on selected files
 class SelectedFiles extends ChangeNotifier {
@@ -99,7 +100,8 @@ class SelectedFiles extends ChangeNotifier {
   /// return the first file by index
   MapEntry<String, int>? getFirstFile() => _selectedFiles.isEmpty
       ? null
-      : _selectedFiles.entries.firstWhere((element) => element.value == 0);
+      : _selectedFiles.entries
+          .firstWhereOrNull((element) => element.value == 0);
 
   /// return name of first file by index
   String? getNameOfFirstFile() => getFirstFile()?.key;

@@ -157,8 +157,6 @@ class _MainPageState extends State<MainPage> {
   /// handle action
   bool handleSingeFileActionNotification(
       FileActionNotification notification, BuildContext buildContext) {
-    var folder = notification.folderName;
-    var fileName = notification.fileName;
     switch (notification.fileAction) {
       case FileActions.see:
         showFile(notification);
@@ -177,10 +175,10 @@ class _MainPageState extends State<MainPage> {
           ScaffoldMessenger.of(buildContext).showSnackBar(snackBar);
           return false;
         }
-        shareFile(folder, fileName);
+        shareFile(notification);
         break;
       case FileActions.delete:
-        // TODO: Handle this case.
+        deleteFileDialog(notification);
         break;
       case FileActions.merge:
         // TODO: Handle this case.
@@ -190,7 +188,7 @@ class _MainPageState extends State<MainPage> {
   }
 
   /// Present file in pdf viewer
-  bool showFile(FileActionNotification notification) {
+  showFile(FileActionNotification notification) {
     var fileName = notification.fileName;
     var folder = notification.folderName;
     showDialog(
@@ -231,7 +229,6 @@ class _MainPageState extends State<MainPage> {
             ]); // show the dial
       },
     );
-    return true;
   }
 
   /// Present simple dialog with original filename and new filename
@@ -318,7 +315,9 @@ class _MainPageState extends State<MainPage> {
   }
 
   /// Present share stuff
-  shareFile(String folder, String fileName) async {
+  shareFile(FileActionNotification notification) async {
+    var folder = notification.folderName;
+    var fileName = notification.fileName;
     var fileData = await getFileData(folder, fileName);
     final appDir = await syspaths.getTemporaryDirectory();
     var file = File('${appDir.path}/${fileName}');
@@ -327,5 +326,86 @@ class _MainPageState extends State<MainPage> {
         mimeTypes: ["application/pdf"],
         subject: "Teilen",
         text: "Datei '$fileName' teilen");
+  }
+
+  deleteFileDialog(FileActionNotification notification) {
+    var folderName = notification.folderName;
+    var fileName = notification.fileName;
+    showDialog(
+      context: context,
+      builder: (BuildContext alertContext) {
+        var loading = false;
+        var done = false;
+        var dialogName = "Datei löschen";
+        var dialogPreFileNameText = "Soll die Datei";
+        var dialogAfterFileNameText = "wirklich gelöscht werden?";
+        return StatefulBuilder(builder: (stateBuilderContext, setAlertState) {
+          return AlertDialog(
+              actionsPadding: EdgeInsets.all(0),
+              title: Text(dialogName, style: TextStyle(color: Colors.red)),
+              scrollable: true,
+              content: loading
+                  ? SizedBox(
+                      height: 50,
+                      width: 50,
+                      child: Center(child: CircularProgressIndicator()))
+                  : Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                          Text(dialogPreFileNameText),
+                          Text(fileName,
+                              style: TextStyle(fontWeight: FontWeight.bold)),
+                          Text(dialogAfterFileNameText)
+                        ]),
+              actions: loading
+                  ? [
+                      TextButton(
+                        child: Text("Abbrechen"),
+                        onPressed: () => Navigator.pop(alertContext),
+                      ),
+                    ]
+                  : done
+                      ? [
+                          TextButton(
+                            child: Text("Ok"),
+                            onPressed: () {
+                              Navigator.pop(alertContext);
+                              _fileContentStateKey
+                                ..currentState?.refreshFiles();
+                            },
+                          )
+                        ]
+                      : [
+                          TextButton(
+                            child: Text("Abbrechen"),
+                            onPressed: () => Navigator.pop(alertContext),
+                          ),
+                          TextButton(
+                              child: Text("Löschen"),
+                              onPressed: () async {
+                                setAlertState(() {
+                                  loading = true;
+                                  dialogName = "Datei wird gelöscht...";
+                                });
+                                var result = await _scanServerApi
+                                    .apiFileDeleteFileFolderFileNameDelete(
+                                        folder: folderName, fileName: fileName);
+                                setAlertState(() {
+                                  loading = false;
+                                  done = true;
+                                  var success = result.isSuccessful &&
+                                      (result.body ?? false);
+                                  dialogName = success
+                                      ? "Datei gelöscht"
+                                      : "Fehler beim Löschen der Datei";
+                                  dialogPreFileNameText = "Datei";
+                                  dialogAfterFileNameText =
+                                      "wurde ${success ? "" : "nicht "}gelöscht";
+                                });
+                              })
+                        ]); // show the dial
+        });
+      },
+    );
   }
 }

@@ -90,13 +90,15 @@ class FileActionsBottomAppBar extends StatelessWidget {
     if (fileName == null) {
       final snackBar = SnackBar(content: Text("Ungültige Datei!"));
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      return;
     }
     var folder = selectedFilesRef.getSelectedFolder();
     if (folder == null) {
       final snackBar = SnackBar(content: Text("Ungültiger Ordner!"));
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
+      return;
     }
-    FileActionNotification(fileActions, folder!, fileName!).dispatch(context);
+    FileActionNotification(fileActions, folder, fileName).dispatch(context);
   }
 
   /// Return legend button
