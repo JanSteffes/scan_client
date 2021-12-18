@@ -1,11 +1,9 @@
-import 'dart:developer';
 import 'dart:io';
 import 'dart:typed_data';
 import 'dart:math' as Math;
 import 'package:flutter/foundation.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:native_pdf_view/native_pdf_view.dart';
 import 'package:scan_client/widgets/opacity_wrapper.dart';
 

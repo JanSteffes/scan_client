@@ -3,7 +3,6 @@ import 'dart:typed_data';
 
 import 'package:chopper/chopper.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:provider/provider.dart';
 import 'package:scan_client/models/file_actions/file_actions.dart';
 import 'package:scan_client/models/notifications/file_action_notification.dart';
@@ -47,6 +46,7 @@ class FileContent extends StatefulWidget implements IContent {
 }
 
 class FileContentState extends State<FileContent> {
+  /// list of all folders
   List<String> _folders = <String>[];
   List<String> _files = <String>[];
   late SelectedFiles _selectedFilesRef;

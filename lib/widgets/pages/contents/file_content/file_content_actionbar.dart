@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:scan_client/models/file_actions/file_actions.dart';
 import 'package:scan_client/models/notifications/file_action_notification.dart';
 import 'package:scan_client/models/notifiers/selected_files_notifier.dart';

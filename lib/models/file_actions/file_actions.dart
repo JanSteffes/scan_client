@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 
 /// Actions that can be done with files
 enum FileActions { see, rename, share, delete, merge }

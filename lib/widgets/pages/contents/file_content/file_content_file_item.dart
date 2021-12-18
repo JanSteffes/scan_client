@@ -2,7 +2,6 @@ import 'dart:developer';
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:flutter/widgets.dart';
 import 'package:scan_client/widgets/opacity_wrapper.dart';
 
 class FileItem extends StatelessWidget {
