@@ -27,7 +27,7 @@ extension FileActionsExtension on FileActions {
   IconData get icon => iconData[this]!;
 
   /// define actions suited for multiple files
-  static const multipleData = {FileActions.delete, FileActions.merge};
+  static const multipleData = {FileActions.merge};
 
   /// define actions suited for single files
   static const singleData = {

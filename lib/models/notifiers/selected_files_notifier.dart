@@ -125,4 +125,9 @@ class SelectedFiles extends ChangeNotifier {
       });
     }
   }
+
+  /// return copy of map
+  Map<String, int> getFiles() {
+    return {..._selectedFiles};
+  }
 }

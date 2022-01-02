@@ -1,9 +1,6 @@
-import 'dart:developer';
-import 'dart:typed_data';
-
-import 'package:chopper/chopper.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:scan_client/helpers/file_helper.dart';
 import 'package:scan_client/models/file_actions/file_actions.dart';
 import 'package:scan_client/models/notifications/file_action_notification.dart';
 import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
@@ -239,40 +236,13 @@ class FileContentState extends State<FileContent> {
             isSelected: isSelected,
             fadeInPageHint: fadeInPageHint,
             selectFunction: selectItem,
-            thumbnailDataFuture: getThumbnailData(fileName),
+            thumbnailDataFuture: FileHelper.getThumbnailData(_selectedFilesRef,
+                widget.cache, widget.scanServerApi, fileName),
             selectionIndex: selectionIndex,
             paddingInsets: getPaddingInsets()),
         onLongPress: () => FileActionNotification(FileActions.see,
                 _selectedFilesRef.getSelectedFolder()!, fileName)
             .dispatch(context));
-  }
-
-  // retrieve thumbnaildata and save it to caches
-  Future<Uint8List?> getThumbnailData(String fileName) async {
-    var cacheKey = "${_selectedFilesRef.getSelectedFolder()}_$fileName";
-    if (widget.cache.containsKey(cacheKey)) {
-      var data = widget.cache[cacheKey];
-      if (data == null) {
-        return Future.error("No data available", StackTrace.current);
-      }
-      return data;
-    }
-
-    Response<String>? data;
-    try {
-      data = await widget.scanServerApi
-          .apiFileGetThumbnailOfFileFolderFileNameGet(
-              folder: _selectedFilesRef.getSelectedFolder(),
-              fileName: fileName);
-    } on Exception catch (e) {
-      log("Errpr while getting tumbnaildata of '$fileName': ${e.toString()}");
-    }
-    if (data != null && data.isSuccessful) {
-      widget.cache[cacheKey] = data.bodyBytes;
-    } else {
-      widget.cache[cacheKey] = null;
-    }
-    return getThumbnailData(fileName);
   }
 
   /// Select item at index

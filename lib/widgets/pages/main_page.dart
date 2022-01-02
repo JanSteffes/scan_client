@@ -10,6 +10,9 @@ import 'package:scan_client/models/file_actions/file_actions.dart';
 import 'package:scan_client/models/notifications/file_action_notification.dart';
 import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
 import 'package:scan_client/scan_server_api_code/client_index.dart';
+import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/delete_dialog.dart';
+import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/merge_dialog.dart';
+import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/rename_dialog.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content_actionbar.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content_show_file.dart';
@@ -181,7 +184,7 @@ class _MainPageState extends State<MainPage> {
         deleteFileDialog(notification);
         break;
       case FileActions.merge:
-        // TODO: Handle this case.
+        mergeFilesDialog(notification);
         break;
     }
     return true;
@@ -238,83 +241,13 @@ class _MainPageState extends State<MainPage> {
     showDialog(
       context: context,
       builder: (BuildContext alertContext) {
-        var loading = false;
-        var done = false;
-        var textFieldController = TextEditingController(text: fileName);
-        var dialogName = "Datei umbennen";
-        String? resultFileName;
-        return StatefulBuilder(builder: (stateBuilderContext, setAlertState) {
-          return AlertDialog(
-              actionsPadding: EdgeInsets.all(0),
-              title: Text(dialogName),
-              scrollable: true,
-              content: loading
-                  ? SizedBox(
-                      height: 50,
-                      width: 50,
-                      child: Center(child: CircularProgressIndicator()))
-                  : done
-                      ? new Text(resultFileName ?? "")
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text("Neuer Name:"),
-                            TextField(controller: textFieldController)
-                          ],
-                        ),
-              actions: loading
-                  ? [
-                      TextButton(
-                        child: Text("Abbrechen"),
-                        onPressed: () => Navigator.pop(alertContext),
-                      ),
-                    ]
-                  : done
-                      ? [
-                          TextButton(
-                            child: Text("Ok"),
-                            onPressed: () {
-                              Navigator.pop(alertContext);
-                              _fileContentStateKey
-                                ..currentState?.refreshFiles();
-                              if (resultFileName != null) {
-                                selectedFilesRef.addFile(resultFileName!);
-                              }
-                            },
-                          )
-                        ]
-                      : [
-                          TextButton(
-                            child: Text("Abbrechen"),
-                            onPressed: () => Navigator.pop(alertContext),
-                          ),
-                          TextButton(
-                              child: Text("Umbenennen"),
-                              onPressed: () async {
-                                setAlertState(() {
-                                  loading = true;
-                                  dialogName = "Datei wird umbenannt...";
-                                });
-                                var result = await _scanServerApi
-                                    .apiFileRenameFileFolderOldFileNameNewFileNamePatch(
-                                        folder: folderName,
-                                        oldFileName: fileName,
-                                        newFileName: textFieldController.text);
-                                var newName = result.body;
-                                setAlertState(() {
-                                  loading = false;
-                                  done = true;
-                                  dialogName = "Datei wurde umbenannt";
-                                  resultFileName = newName;
-                                });
-                              })
-                        ]); // show the dial
-        });
+        return RenameDialog(_fileContentStateKey, selectedFilesRef,
+            _scanServerApi, folderName, fileName);
       },
     );
   }
 
-  /// Present share stuff
+  /// Present share file
   shareFile(FileActionNotification notification) async {
     var folder = notification.folderName;
     var fileName = notification.fileName;
@@ -328,83 +261,31 @@ class _MainPageState extends State<MainPage> {
         text: "Datei '$fileName' teilen");
   }
 
+  /// Present validation of delete action dialog and result
   deleteFileDialog(FileActionNotification notification) {
     var folderName = notification.folderName;
     var fileName = notification.fileName;
     showDialog(
+        context: context,
+        builder: (BuildContext alertContext) {
+          return DeleteDialog(_fileContentStateKey, selectedFilesRef,
+              _scanServerApi, folderName, fileName);
+        });
+  }
+
+  /// Present dialog to show files and mergename field
+  mergeFilesDialog(FileActionNotification notification) {
+    var folderName = notification.folderName;
+    var files = selectedFilesRef.getFiles();
+    final valesAsc = files.values.toList()..sort((a, b) => a.compareTo(b));
+    var mergeOrder = <String>[];
+    valesAsc.forEach((v) => mergeOrder
+        .add(files.entries.firstWhere((element) => element.value == v).key));
+    showDialog(
       context: context,
       builder: (BuildContext alertContext) {
-        var loading = false;
-        var done = false;
-        var dialogName = "Datei löschen";
-        var dialogPreFileNameText = "Soll die Datei";
-        var dialogAfterFileNameText = "wirklich gelöscht werden?";
-        return StatefulBuilder(builder: (stateBuilderContext, setAlertState) {
-          return AlertDialog(
-              actionsPadding: EdgeInsets.all(0),
-              title: Text(dialogName, style: TextStyle(color: Colors.red)),
-              scrollable: true,
-              content: loading
-                  ? SizedBox(
-                      height: 50,
-                      width: 50,
-                      child: Center(child: CircularProgressIndicator()))
-                  : Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                          Text(dialogPreFileNameText),
-                          Text(fileName,
-                              style: TextStyle(fontWeight: FontWeight.bold)),
-                          Text(dialogAfterFileNameText)
-                        ]),
-              actions: loading
-                  ? [
-                      TextButton(
-                        child: Text("Abbrechen"),
-                        onPressed: () => Navigator.pop(alertContext),
-                      ),
-                    ]
-                  : done
-                      ? [
-                          TextButton(
-                            child: Text("Ok"),
-                            onPressed: () {
-                              Navigator.pop(alertContext);
-                              _fileContentStateKey
-                                ..currentState?.refreshFiles();
-                            },
-                          )
-                        ]
-                      : [
-                          TextButton(
-                            child: Text("Abbrechen"),
-                            onPressed: () => Navigator.pop(alertContext),
-                          ),
-                          TextButton(
-                              child: Text("Löschen"),
-                              onPressed: () async {
-                                setAlertState(() {
-                                  loading = true;
-                                  dialogName = "Datei wird gelöscht...";
-                                });
-                                var result = await _scanServerApi
-                                    .apiFileDeleteFileFolderFileNameDelete(
-                                        folder: folderName, fileName: fileName);
-                                setAlertState(() {
-                                  loading = false;
-                                  done = true;
-                                  var success = result.isSuccessful &&
-                                      (result.body ?? false);
-                                  dialogName = success
-                                      ? "Datei gelöscht"
-                                      : "Fehler beim Löschen der Datei";
-                                  dialogPreFileNameText = "Datei";
-                                  dialogAfterFileNameText =
-                                      "wurde ${success ? "" : "nicht "}gelöscht";
-                                });
-                              })
-                        ]); // show the dial
-        });
+        return MergeDialog(_fileContentStateKey, selectedFilesRef,
+            _scanServerApi, folderName, mergeOrder);
       },
     );
   }

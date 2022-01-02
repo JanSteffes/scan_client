@@ -9,7 +9,7 @@ class FileItem extends StatelessWidget {
   final bool isSelected;
   final bool fadeInPageHint;
   final Future<Uint8List?> thumbnailDataFuture;
-  final Function(String) selectFunction;
+  final Function(String)? selectFunction;
   final int? selectionIndex;
   final EdgeInsetsGeometry? paddingInsets;
 
@@ -66,7 +66,7 @@ class FileItem extends StatelessWidget {
         fit: StackFit.expand,
       ),
       // onLongPress: () => setState(() => selectItem(current)),
-      onTap: () => selectFunction(fileName),
+      onTap: selectFunction == null ? null : () => selectFunction!(fileName),
     );
   }
 
