@@ -35,4 +35,18 @@ class FileHelper {
     }
     return getThumbnailData(selectedFilesRef, cache, scanServerApi, fileName);
   }
+
+  /// load file data
+  static Future<Uint8List?> getFileData(
+      ScanServerApi scanServerApi, String folder, String fileName) async {
+    Response<String>? data;
+    try {
+      data =
+          await scanServerApi.apiFileGet(folder: folder, fileToRead: fileName);
+    } on Exception catch (e) {
+      log("Error while getting tumbnaildata of '$fileName': ${e.toString()}");
+      return null;
+    }
+    return data.bodyBytes;
+  }
 }

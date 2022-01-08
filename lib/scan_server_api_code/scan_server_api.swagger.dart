@@ -95,7 +95,7 @@ abstract class ScanServerApi extends ChopperService {
   Future<chopper.Response<String>> apiScanPost(
       {@Query('folderName') String? folderName,
       @Query('fileName') String? fileName,
-      @Query('scanQuality') String? scanQuality});
+      @Query('scanQuality') required enums.ScanQuality scanQuality});
 }
 
 final Map<Type, Object Function(Map<String, dynamic>)>
@@ -107,14 +107,13 @@ String? scanQualityToJson(enums.ScanQuality? scanQuality) {
 
 enums.ScanQuality scanQualityFromJson(String? scanQuality) {
   if (scanQuality == null) {
-    return enums.ScanQuality.swaggerGeneratedUnknown;
+    return enums.ScanQuality.fast;
   }
 
   return enums.$ScanQualityMap.entries
       .firstWhere(
           (element) => element.value.toLowerCase() == scanQuality.toLowerCase(),
-          orElse: () =>
-              const MapEntry(enums.ScanQuality.swaggerGeneratedUnknown, ''))
+          orElse: () => const MapEntry(enums.ScanQuality.fast, ''))
       .key;
 }
 

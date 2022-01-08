@@ -1,19 +1,13 @@
 import 'package:flutter/material.dart';
-import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
 import 'package:scan_client/scan_server_api_code/scan_server_api.swagger.dart';
-import 'package:scan_client/widgets/pages/contents/file_content/file_content.dart';
 
 abstract class FileActionDialogBase extends StatefulWidget {
-  // ignore: unused_field
-  final GlobalKey<FileContentState> _fileContentStateKey;
-  final SelectedFiles selectedFilesRef;
   // ignore: unused_field
   final ScanServerApi _scanServerApi;
   // ignore: unused_field
   final String _folderName;
 
-  FileActionDialogBase(this._fileContentStateKey, this.selectedFilesRef,
-      this._scanServerApi, this._folderName);
+  FileActionDialogBase(this._scanServerApi, this._folderName);
 }
 
 abstract class FileActionDialogBaseState<T extends FileActionDialogBase>

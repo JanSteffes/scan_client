@@ -14,8 +14,7 @@ class DeleteDialog extends FileActionDialogBase {
 
   DeleteDialog(this._fileContentStateKey, this._selectedFilesRef,
       this._scanServerApi, this._folderName, this._fileName)
-      : super(_fileContentStateKey, _selectedFilesRef, _scanServerApi,
-            _folderName);
+      : super(_scanServerApi, _folderName);
 
   @override
   State<StatefulWidget> createState() {

@@ -9,6 +9,12 @@ import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
 import 'package:scan_client/widgets/pages/main_page.dart';
 
 void main() {
+  // TODO get good window sizes
+
+  // if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+  //   DesktopWindow.setMinWindowSize(Size(300, 400));
+  //   DesktopWindow.setMaxWindowSize(Size(300, 400));
+  // }
   runZonedGuarded(() async {
     WidgetsFlutterBinding.ensureInitialized();
     FlutterError.onError = (FlutterErrorDetails details) {

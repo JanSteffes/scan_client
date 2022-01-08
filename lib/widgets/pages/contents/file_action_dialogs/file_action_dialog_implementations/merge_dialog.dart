@@ -13,8 +13,7 @@ class MergeDialog extends FileActionDialogBase {
 
   MergeDialog(this._fileContentStateKey, this.selectedFilesRef,
       this._scanServerApi, this._folderName, this._mergeFiles)
-      : super(_fileContentStateKey, selectedFilesRef, _scanServerApi,
-            _folderName);
+      : super(_scanServerApi, _folderName);
 
   @override
   MergeDialogState createState() => MergeDialogState();

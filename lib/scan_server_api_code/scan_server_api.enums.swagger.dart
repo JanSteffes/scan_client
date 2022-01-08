@@ -1,8 +1,6 @@
 import 'package:json_annotation/json_annotation.dart';
 
 enum ScanQuality {
-  @JsonValue('swaggerGeneratedUnknown')
-  swaggerGeneratedUnknown,
   @JsonValue('Fast')
   fast,
   @JsonValue('Normal')
@@ -18,5 +16,4 @@ const $ScanQualityMap = {
   ScanQuality.normal: 'Normal',
   ScanQuality.good: 'Good',
   ScanQuality.best: 'Best',
-  ScanQuality.swaggerGeneratedUnknown: ''
 };

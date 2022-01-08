@@ -34,6 +34,8 @@ dependencies:
   native_pdf_view: ^5.0.0
   share_plus: ^3.0.4
   path_provider: ^2.0.8
+  desktop_window: ^0.4.0
+  intl: ^0.17.0
 
 dev_dependencies:
   flutter_test:

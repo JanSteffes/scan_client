@@ -13,8 +13,7 @@ class RenameDialog extends FileActionDialogBase {
 
   RenameDialog(this._fileContentStateKey, this._selectedFilesRef,
       this._scanServerApi, this._folderName, this._fileName)
-      : super(_fileContentStateKey, _selectedFilesRef, _scanServerApi,
-            _folderName);
+      : super(_scanServerApi, _folderName);
 
   @override
   State<StatefulWidget> createState() {
@@ -54,11 +53,15 @@ class RenameDialogState extends FileActionDialogBaseState<RenameDialog> {
             setState(() {
               loading = true;
             });
+            var renameFileName = textFieldController.text;
+            if (!renameFileName.endsWith(".pdf")) {
+              renameFileName += ".pdf";
+            }
             var result = await widget._scanServerApi
                 .apiFileRenameFileFolderOldFileNameNewFileNamePatch(
                     folder: widget._folderName,
                     oldFileName: widget._fileName,
-                    newFileName: textFieldController.text);
+                    newFileName: renameFileName);
             var newName = result.body;
             setState(() {
               loading = false;
@@ -81,7 +84,9 @@ class RenameDialogState extends FileActionDialogBaseState<RenameDialog> {
         ),
         Container(height: 20),
         Text("Neuer Name:"),
-        TextField(controller: textFieldController)
+        TextField(
+            controller: textFieldController,
+            decoration: InputDecoration(suffixText: ".pdf"))
       ],
     );
   }

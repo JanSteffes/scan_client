@@ -81,12 +81,14 @@ class _$ScanServerApi extends ScanServerApi {
 
   @override
   Future<Response<String>> apiScanPost(
-      {String? folderName, String? fileName, String? scanQuality}) {
+      {String? folderName,
+      String? fileName,
+      required enums.ScanQuality scanQuality}) {
     final $url = '/api/Scan';
     final $params = <String, dynamic>{
       'folderName': folderName,
       'fileName': fileName,
-      'scanQuality': scanQuality
+      'scanQuality': scanQuality.toString().replaceFirst("ScanQuality.", "")
     };
     final $request = Request('POST', $url, client.baseUrl, parameters: $params);
     return client.send<String, String>($request);

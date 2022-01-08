@@ -1,11 +1,10 @@
-import 'dart:developer';
 import 'dart:io';
-import 'dart:typed_data';
 
-import 'package:chopper/chopper.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:scan_client/helpers/file_helper.dart';
 import 'package:scan_client/models/file_actions/file_actions.dart';
 import 'package:scan_client/models/notifications/file_action_notification.dart';
 import 'package:scan_client/models/notifiers/selected_files_notifier.dart';
@@ -13,9 +12,10 @@ import 'package:scan_client/scan_server_api_code/client_index.dart';
 import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/delete_dialog.dart';
 import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/merge_dialog.dart';
 import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/rename_dialog.dart';
+import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/scan_dialog.dart';
+import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/show_dialog.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content_actionbar.dart';
-import 'package:scan_client/widgets/pages/contents/file_content/file_content_show_file.dart';
 import 'contents/globals.dart' as globals;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart' as syspaths;
@@ -75,7 +75,9 @@ class _MainPageState extends State<MainPage> {
                   handleSingeFileActionNotification(
                       notification, fileContentContext));
         }),
-        floatingActionButton: getScanButton(context),
+        floatingActionButton: Builder(builder: (floatingActionButtonContext) {
+          return getScanButton(floatingActionButtonContext);
+        }),
         floatingActionButtonLocation: FloatingActionButtonLocation.centerDocked,
         bottomNavigationBar: Builder(builder: (bottomAppBarContext) {
           return NotificationListener<FileActionNotification>(
@@ -89,11 +91,18 @@ class _MainPageState extends State<MainPage> {
   }
 
   ///build scan button
-  Widget getScanButton(BuildContext context) {
+  Widget getScanButton(BuildContext floatingActionButtonContext) {
     return FloatingActionButton(
         onPressed: () {
-          // TODO create dialog with can quality, checkbox (default current date folder to save to) and filename text field
-          // also set state to rebuild/refresh FileContent
+          var date = DateTime.now();
+          var dateFormat = DateFormat('yyyy-MM-dd');
+          var folder = dateFormat.format(date);
+          showDialog(
+              context: floatingActionButtonContext,
+              builder: (BuildContext alertContext) {
+                return ScanDialog(_fileContentStateKey, selectedFilesRef,
+                    _scanServerApi, folder);
+              });
         },
         child: const Icon(Icons.scanner_rounded),
         tooltip: 'Scannen');
@@ -144,19 +153,6 @@ class _MainPageState extends State<MainPage> {
     _scanServerApi.client = ScanServerApi.createClient(_currentEndPoint!);
   }
 
-  /// load file data
-  Future<Uint8List?> getFileData(String folder, String fileName) async {
-    Response<String>? data;
-    try {
-      data =
-          await _scanServerApi.apiFileGet(folder: folder, fileToRead: fileName);
-    } on Exception catch (e) {
-      log("Error while getting tumbnaildata of '$fileName': ${e.toString()}");
-      return null;
-    }
-    return data.bodyBytes;
-  }
-
   /// handle action
   bool handleSingeFileActionNotification(
       FileActionNotification notification, BuildContext buildContext) {
@@ -195,43 +191,10 @@ class _MainPageState extends State<MainPage> {
     var fileName = notification.fileName;
     var folder = notification.folderName;
     showDialog(
-      context: context,
-      builder: (BuildContext alertContext) {
-        return AlertDialog(
-            actionsPadding: EdgeInsets.all(0),
-            title: Text("Datei '$fileName'"),
-            scrollable: true,
-            content: FutureBuilder<Uint8List?>(
-                future: getFileData(folder, fileName),
-                builder: (BuildContext futureBuilderContext,
-                    AsyncSnapshot<Uint8List?> snapshot) {
-                  if (snapshot.hasData) {
-                    if (snapshot.data != null) {
-                      try {
-                        return FileContentShowFile(
-                            fileName: fileName, documentData: snapshot.data!);
-                      } on Exception catch (e) {
-                        log("Error while creating image preview of '$fileName': ${e.toString()}");
-                        return Icon(Icons.error, color: Colors.red);
-                      }
-                    }
-                    return Container(
-                        child: Center(child: CircularProgressIndicator()));
-                  } else if (snapshot.hasError) {
-                    return Icon(Icons.error, color: Colors.red);
-                  } else {
-                    return Container(
-                        child: Center(child: CircularProgressIndicator()));
-                  }
-                }),
-            actions: [
-              TextButton(
-                child: Text("Ok"),
-                onPressed: () => Navigator.pop(alertContext),
-              )
-            ]); // show the dial
-      },
-    );
+        context: context,
+        builder: (BuildContext alertContext) {
+          return ShowDialog(_scanServerApi, folder, fileName);
+        });
   }
 
   /// Present simple dialog with original filename and new filename
@@ -251,7 +214,8 @@ class _MainPageState extends State<MainPage> {
   shareFile(FileActionNotification notification) async {
     var folder = notification.folderName;
     var fileName = notification.fileName;
-    var fileData = await getFileData(folder, fileName);
+    var fileData =
+        await FileHelper.getFileData(_scanServerApi, folder, fileName);
     final appDir = await syspaths.getTemporaryDirectory();
     var file = File('${appDir.path}/${fileName}');
     await file.writeAsBytes(fileData!);
