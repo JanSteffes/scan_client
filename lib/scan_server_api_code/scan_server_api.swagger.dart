@@ -96,6 +96,37 @@ abstract class ScanServerApi extends ChopperService {
       {@Query('folderName') String? folderName,
       @Query('fileName') String? fileName,
       @Query('scanQuality') required enums.ScanQuality scanQuality});
+
+  ///Returns if the app with the requesting version is old or not.
+  ///@param versionString current app version
+  Future<chopper.Response<bool>> apiStatusUpdateAvailableGet(
+      {String? versionString}) {
+    return _apiStatusUpdateAvailableGet(versionString: versionString);
+  }
+
+  ///Returns if the app with the requesting version is old or not.
+  ///@param versionString current app version
+  @Get(path: '/api/Status/UpdateAvailable')
+  Future<chopper.Response<bool>> _apiStatusUpdateAvailableGet(
+      {@Query('versionString') String? versionString});
+
+  ///Returns the newest version as apk file
+  Future<chopper.Response<List<String>>> apiStatusGetUpdateFileGet() {
+    return _apiStatusGetUpdateFileGet();
+  }
+
+  ///Returns the newest version as apk file
+  @Get(path: '/api/Status/GetUpdateFile')
+  Future<chopper.Response<List<String>>> _apiStatusGetUpdateFileGet();
+
+  ///Return true, used to see if server is reachable/running
+  Future<chopper.Response<bool>> apiStatusPingGet() {
+    return _apiStatusPingGet();
+  }
+
+  ///Return true, used to see if server is reachable/running
+  @Get(path: '/api/Status/Ping')
+  Future<chopper.Response<bool>> _apiStatusPingGet();
 }
 
 final Map<Type, Object Function(Map<String, dynamic>)>

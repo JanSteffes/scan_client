@@ -93,4 +93,26 @@ class _$ScanServerApi extends ScanServerApi {
     final $request = Request('POST', $url, client.baseUrl, parameters: $params);
     return client.send<String, String>($request);
   }
+
+  @override
+  Future<Response<bool>> _apiStatusUpdateAvailableGet({String? versionString}) {
+    final $url = '/api/Status/UpdateAvailable';
+    final $params = <String, dynamic>{'versionString': versionString};
+    final $request = Request('GET', $url, client.baseUrl, parameters: $params);
+    return client.send<bool, bool>($request);
+  }
+
+  @override
+  Future<Response<List<String>>> _apiStatusGetUpdateFileGet() {
+    final $url = '/api/Status/GetUpdateFile';
+    final $request = Request('GET', $url, client.baseUrl);
+    return client.send<List<String>, String>($request);
+  }
+
+  @override
+  Future<Response<bool>> _apiStatusPingGet() {
+    final $url = '/api/Status/Ping';
+    final $request = Request('GET', $url, client.baseUrl);
+    return client.send<bool, bool>($request);
+  }
 }
