@@ -16,7 +16,6 @@ import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_acti
 import 'package:scan_client/widgets/pages/contents/file_action_dialogs/file_action_dialog_implementations/show_dialog.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content.dart';
 import 'package:scan_client/widgets/pages/contents/file_content/file_content_actionbar.dart';
-import 'contents/globals.dart' as globals;
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart' as syspaths;
 
